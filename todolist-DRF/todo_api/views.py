@@ -1,9 +1,9 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.http import JsonResponse
 
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from .serializers import TodoSerializer
+from .serializers import TodoSerializer, TodoOrder
 
 from .models import Todo
 # Create your views here.
@@ -22,7 +22,7 @@ def apiOverview(request):
 
 @api_view(['GET'])
 def todoList(request):
-	todos = Todo.objects.all().order_by('-id')
+	todos = Todo.objects.all().order_by('-order_num')
 	serializer = TodoSerializer(todos, many=True)
 	return Response(serializer.data)
 
@@ -60,5 +60,18 @@ def todoDelete(request, pk):
 
 	return Response('Item succsesfully delete!')
 
+@api_view(['POST'])
+def todoOrder(request):
+	serializer = TodoOrder(data=request.data)
+	todo = Todo.objects.all()
+	if serializer.is_valid():
+		order_list = serializer.data.get('order')
+		order = 0
+		for id in reversed(order_list):
+			todo = Todo.objects.get(id = id)
+			todo.order_num = order
+			order += 1
+			todo.save()
 
+	return redirect("todo_api:todo-list")
 
